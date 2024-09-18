@@ -27,22 +27,19 @@ const CancelOrWithdrawalForm: React.FC<ICancelOrWithdrawalFormProps> = ({
   const [formData, setFormData] = React.useState<any>({
   })
   const [cOrW, setCorW] = React.useState<string>('')
-
-
-
   const cdoaList = useSharePointListData({
     client: spHttpClient,
     absoluteUrl: absoluteUrl,
     spListLink: 'https://livecareered.sharepoint.com/sites/AIU/Lists/CDOA%20to%20DSM%20Map/AllItems.aspx',
   })[0]
-  
+
   const [cdoaData, setCDOAData] = React.useState<{
     name: string, CDOAId: number
   }[] | null>(null);
   const [dsmValue, setDSMValue] = React.useState<string | null>('')
 
   const hasFetched = React.useRef(false); // To prevent multiple fetches
-  
+
   const getUserByID = async (id: string) => {
     const basePath = new URL(spListStrings.cdoaToDsmMap).origin;
     const subsites = spListStrings.cdoaToDsmMap.split("Lists")[0].split("com")[1];
@@ -61,37 +58,34 @@ const CancelOrWithdrawalForm: React.FC<ICancelOrWithdrawalFormProps> = ({
   };
 
   React.useEffect(() => {
-  
+
     const getCDOANames = async (group: any[]) => {
       const names = await Promise.all(
         group.map(async (item) => {
           const user = await getUserByID(item.CDOAId);
-          return {name: user?.Title, CDOAId: user?.Id } || '';
+          return { name: user?.Title, CDOAId: user?.Id } || '';
         })
       );
       return names;
     };
-  
+
     const loadCDOANames = async () => {
       if (!cdoaList) {
-        console.log("No cdoaList found, skipping");
         return;
       }
-  
-      console.log("Fetching CDOA names...");
+
       const data = await getCDOANames(cdoaList);
       setCDOAData(data);
     };
-  
+
     if (cdoaList && cdoaList.length > 0 && !hasFetched.current) {
       hasFetched.current = true; // Prevent re-fetching
       loadCDOANames();
     } else {
-      console.log("CDOA list already fetched or empty.");
     }
   }, [cdoaList, spHttpClient]);
-  
-  
+
+
 
   const peoplePickerContext: IPeoplePickerContext = {
     absoluteUrl: absoluteUrl,
@@ -99,42 +93,56 @@ const CancelOrWithdrawalForm: React.FC<ICancelOrWithdrawalFormProps> = ({
     spHttpClient: spHttpClient
   };
 
-  type TPerson = {
-    id: string,
-    imageInitials: string,
-    imageUrl: string,
-    loginName: string,
-    optionalText: string,
-    secondaryText: string,
-    tertiaryText: string,
-    text: string
-  }
+  const getUserIdByemail = async (email: string) => {
+    const userUrl = `https://livecareered.sharepoint.com/_api/web/siteusers?$filter=Email eq '${email}'`;
 
-  const pickFA = (items: TPerson[]) => {
-    const newFormData = formData
-    newFormData.pickedFA = items[0]
-    setFormData(newFormData)
+    const response = await spHttpClient.get(userUrl, SPHttpClient.configurations.v1);
+
+    if (!response.ok) {
+      throw new Error('Error fetching user: ' + response.statusText);
+    }
+
+    const data = await response.json();
+    const user = data.value[0]
+    return {
+      Id: parseInt(user.Id),
+      Title: user.Title,
+      Email: user.Email
+    }
+  };
+
+
+  const pickFA = async (items: any[]) => {
+    const newFormData = { ...formData }
+    if (items.length > 0) {
+      const user = await getUserIdByemail(items[0].secondaryText);
+
+      newFormData.AA_x002f_FAAdvisorId = user.Id
+      // Update state with new form data
+      setFormData(newFormData);
+    }
   }
   const pickCDOA = (e: any, option?: any) => {
-    const newFormData = formData
-    newFormData.pickedCDOA = option.text
-      const CDOAId = option.key
-    console.log('cdoaList: ', cdoaList)
-    const findDSM =async (CDOAId: string) =>{
-      const DSM = cdoaList?.filter((item)=>{
+    const newFormData = { ...formData }
+    const CDOAId = option.key
+    const findDSM = async (CDOAId: string) => {
+
+      newFormData.CDOANameId = parseInt(option.key)
+      const DSM = cdoaList?.filter((item) => {
         if (item.CDOAId.toString() === CDOAId) {
           return item
         }
       })
       if (!DSM) {
-        console.log('finding DSM Error') 
+        console.log('finding DSM Error')
         return
       }
       const DSMId = DSM[0].DSMId
-      console.log('believed to be the DSMId: ', DSMId)
-const userDataDSM = await getUserByID(DSMId.toString())
+      const userDataDSM = await getUserByID(DSMId.toString())
 
       console.log('dsm user data: ', userDataDSM)
+
+      newFormData.CDSMId = parseInt(userDataDSM.Id)
       setDSMValue(userDataDSM.Title)
       return
     }
@@ -144,98 +152,82 @@ const userDataDSM = await getUserByID(DSMId.toString())
   }
 
   const studentNameInput = (e: any) => {
-    const newFormData = formData
-    newFormData.studentName = e.target.value
+    const newFormData = { ...formData }
+    newFormData.StudentName = e.target.value
     setFormData(newFormData)
   }
 
   const studentIDInput = (e: any) => {
-    const newFormData = formData
-    newFormData.studentID = e.target.value
+    const newFormData = { ...formData }
+    newFormData.StudentID = parseInt(e.target.value)
     setFormData(newFormData)
     return
   }
 
   const currentStartDateInput = (e: any) => {
-    const newFormData = formData
-    newFormData.currentStartDate = e.target.value
+    const newFormData = { ...formData }
+    newFormData.StartDate = new Date(e.target.value).toISOString()
     setFormData(newFormData)
   }
 
   const cancelOrWithdrawalInput = (e: any, option?: any) => {
-    const newFormData = formData
-    newFormData.cancelOrWithdrawal = option.text
+    const newFormData = { ...formData }
+    newFormData.CorW = option.text
     setFormData(newFormData)
     setCorW(option.text)
   }
 
   const esaInput = (e: any, option?: any) => {
-    const newFormData = formData
-    newFormData.esa = option.text
+    const newFormData = { ...formData }
+    newFormData.ESA = option.text === 'Yes' ? true : false
     setFormData(newFormData)
   }
 
 
   const notesInput = (e: any) => {
-    const newFormData = formData
-    newFormData.notes = e.target.value
+    const newFormData = { ...formData }
+    newFormData.Notes = e.target.value
     setFormData(newFormData)
   }
 
   const documentedInNotesInput = (e: any, option?: any) => {
-    const newFormData = formData
-    newFormData.documentedInNotes = option.text
+    const newFormData = { ...formData }
+    newFormData.DocumentedInNotes = option.text === 'Yes' ? true : false
     setFormData(newFormData)
   }
 
-  const instructorNameInput = (items: TPerson[]) => {
-    const newFormData = formData
-    newFormData.instructorName = items[0]
+  const instructorNameInput = (e: any) => {
+    const newFormData = { ...formData }
+    newFormData.InstructorName = e.target.value
     setFormData(newFormData)
   }
   const submitForm = () => {
-    // Prepare data to submit
-    const validFormData = {
-      Title: '',
-      StudentName: formData.studentName ?? '',
-      StudentID: parseInt(formData.studentID ?? ''),
-      CDOAName: formData.pickedCDOA ?? '',
-      StartDate: formData.currentStartDate ?? '',
-      CorW: formData.cancelOrWithdrawal ?? '',
-      ESA: formData.esa ?? '',
-      Notes: formData.notes ?? '',
-      DocumentedInNotes: formData.documentedInNotes ?? '',
-      InstructorName: formData.instructorName ?? '',
-      'AA/FAAdvisor': formData.pickedFA ?? '',
-    };
-  
-    // URL to the SharePoint REST API endpoint for the list items
+
+    console.log('formData: ', formData)
     const listUrl = `https://livecareered.sharepoint.com/sites/Forms/_api/web/lists/getbytitle('Cancel%20or%20Withdrawal%20Request%20Form%20Test')/items`;
-  
+
     spHttpClient.post(
       listUrl,
       SPHttpClient.configurations.v1,
       {
-        body: JSON.stringify(validFormData),
+        body: JSON.stringify(formData),
       }
     )
-    .then(response => {
-      if (!response.ok) {
-        return response.json().then(err => { throw new Error(JSON.stringify(err)); });
-      }
-      return response.json();
-    })
-    .then(data => {
-      console.log('Success:', data);
-    })
-    .catch(error => {
-      console.log('Fail:', error);
-    });
-  
-    console.log('formData:', formData);
+      .then(response => {
+        if (!response.ok) {
+          return response.json().then(err => { throw new Error(JSON.stringify(err)); });
+        }
+        return response.json();
+      })
+      .then(data => {
+        console.log('Success:', data);
+      })
+      .catch(error => {
+        console.log('Fail:', error);
+      });
   }
-  
-  
+
+
   if (!cdoaData) {
     return null
   }
@@ -251,8 +243,8 @@ const userDataDSM = await getUserByID(DSMId.toString())
         cOrW === 'Withdrawal' ? (
           <>
             <TextField required={formData.cancelOrWithdrawal === 'Withdrawal' ? true : false} label={'Students Exact Written Request'} type={'text'} onChange={notesInput} />
-            <Dropdown required label={'Documented in Notes'} options={[{ key: 'yes', text: 'Yes' }, { key: 'no', text: 'No' }]} onChange={documentedInNotesInput} />
-            <PeoplePicker
+            <Dropdown required={formData.cancelOrWithdrawal === 'Withdrawal' ? true : false} label={'Documented in Notes'} options={[{ key: 'yes', text: 'Yes' }, { key: 'no', text: 'No' }]} onChange={documentedInNotesInput} />
+            {/* <PeoplePicker
               context={peoplePickerContext}
               titleText={'Instructor Name'}
               personSelectionLimit={1}
@@ -262,8 +254,9 @@ const userDataDSM = await getUserByID(DSMId.toString())
               searchTextLimit={5}
               onChange={instructorNameInput}
               principalTypes={[PrincipalType.User]}
-              resolveDelay={1000} />
-            <Dropdown required label={'ESA'} options={[{ key: 'yes', text: 'Yes' }, { key: 'no', text: 'No' }]} onChange={esaInput} />
+              resolveDelay={1000} /> */}
+            <TextField required={formData.cancelOrWithdrawal === 'Withdrawal' ? true : false}  label={'Instructor Name'} type={'text'} onChange={instructorNameInput} />
+            <Dropdown required={formData.cancelOrWithdrawal === 'Withdrawal' ? true : false}  label={'ESA'} options={[{ key: 'yes', text: 'Yes' }, { key: 'no', text: 'No' }]} onChange={esaInput} />
           </>
         ) : null}
       <PeoplePicker
@@ -290,12 +283,7 @@ const userDataDSM = await getUserByID(DSMId.toString())
         }
         onChange={pickCDOA}
       />
-      {/* Lookup CDOA's DSM, list it here as the disabled input 
-      <div>
-      <p>DSM:</p>
-      <input disabled />
-      </div> */}
-         {dsmValue ? ( <TextField disabled label={'DSM'} type={'text'} value={dsmValue} />): null}  
+      {dsmValue ? (<TextField disabled label={'DSM'} type={'text'} value={dsmValue} />) : null}
       <button style={{
         padding: '.5rem',
         backgroundColor: 'white',
