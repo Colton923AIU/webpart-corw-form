@@ -1,0 +1,21 @@
+{
+  "@microsoft/generator-sharepoint": {
+    "plusBeta": false,
+    "isCreatingSolution": true,
+    "nodeVersion": "20.14.0",
+    "sdksVersions": {
+      "@microsoft/microsoft-graph-client": "3.0.2",
+      "@microsoft/teams-js": "2.12.0"
+    },
+    "version": "1.19.0",
+    "libraryName": "cw-form",
+    "libraryId": "b9c47217-ed4f-4ff7-8ed4-ee114077b2df",
+    "environment": "spo",
+    "packageManager": "npm",
+    "solutionName": "cw-form",
+    "solutionShortDescription": "cw-form description",
+    "skipFeatureDeployment": true,
+    "isDomainIsolated": false,
+    "componentType": "webpart"
+  }
+}

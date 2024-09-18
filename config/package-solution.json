@@ -1,0 +1,40 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/package-solution.schema.json",
+  "solution": {
+    "name": "cw-form-v1",
+    "id": "b9c47217-ed4f-4ff7-8ed4-ee114077b2df",
+    "version": "1.0.0.0",
+    "includeClientSideAssets": true,
+    "skipFeatureDeployment": true,
+    "isDomainIsolated": false,
+    "developer": {
+      "name": "",
+      "websiteUrl": "",
+      "privacyUrl": "",
+      "termsOfUseUrl": "",
+      "mpnId": "Undefined-1.19.0"
+    },
+    "metadata": {
+      "shortDescription": {
+        "default": "cancel or withdrawal form"
+      },
+      "longDescription": {
+        "default": "demo of the cancel or withdrawal form"
+      },
+      "screenshotPaths": [],
+      "videoUrl": "",
+      "categories": []
+    },
+    "features": [
+      {
+        "title": "cw-form Feature",
+        "description": "The feature that activates elements of the cw-form solution.",
+        "id": "b4058a17-3d18-4226-a80b-97ad279dcad2",
+        "version": "1.0.0.0"
+      }
+    ]
+  },
+  "paths": {
+    "zippedPackage": "solution/cw-form.sppkg"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/config.2.0.schema.json",
+  "version": "2.0",
+  "bundles": {
+    "cancel-or-withdrawal-form-web-part": {
+      "components": [
+        {
+          "entrypoint": "./lib/webparts/cancelOrWithdrawalForm/CancelOrWithdrawalFormWebPart.js",
+          "manifest": "./src/webparts/cancelOrWithdrawalForm/CancelOrWithdrawalFormWebPart.manifest.json"
+        }
+      ]
+    }
+  },
+  "externals": {},
+  "localizedResources": {
+    "CancelOrWithdrawalFormWebPartStrings": "lib/webparts/cancelOrWithdrawalForm/loc/{locale}.js",
+    "ControlStrings": "node_modules/@pnp/spfx-controls-react/lib/loc/{locale}.js"
+  }
+}
