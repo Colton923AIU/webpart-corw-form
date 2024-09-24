@@ -8,13 +8,12 @@ import { PeoplePicker } from "@pnp/spfx-controls-react/lib/PeoplePicker";
 import { DatePicker, Dropdown, TextField } from "@fluentui/react";
 import useSharePointListData from "../hooks/useSharepointListData/useSharepointListData";
 import spListStrings from "../loc/spListStrings";
-import { SPHttpClient } from "@microsoft/sp-http";
 import getUserByID from "../functions/getters/getUserById/getUserByID";
-import setters from "../functions/setters";
-import { SubmitHandler, useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { CWForm } from "../types/CWForm";
 import { ICancelOrWithdrawalFormProps } from "../types/ICancelWithdrawalFormProps";
 import resolver from "./resolver";
+import submitForm from "../functions/";
 
 const CancelOrWithdrawalForm: React.FC<ICancelOrWithdrawalFormProps> = ({
   absoluteUrl,
@@ -33,7 +32,7 @@ const CancelOrWithdrawalForm: React.FC<ICancelOrWithdrawalFormProps> = ({
       StartDate: new Date(),
     },
   });
-  const [dsmValue, setDsmValue] = React.useState<any>();
+
   const cdoaList = useSharePointListData({
     client: spHttpClient,
     absoluteUrl: absoluteUrl,
@@ -41,13 +40,8 @@ const CancelOrWithdrawalForm: React.FC<ICancelOrWithdrawalFormProps> = ({
   })[0];
 
   const [cdoaData, setCDOAData] = React.useState<
-    | {
-        name: string;
-        CDOAId: number;
-      }[]
-    | null
+    { name: string; CDOAId: number }[] | null
   >(null);
-
   const hasFetched = React.useRef(false); // To prevent multiple fetches
 
   React.useEffect(() => {
@@ -66,10 +60,7 @@ const CancelOrWithdrawalForm: React.FC<ICancelOrWithdrawalFormProps> = ({
     };
 
     const loadCDOANames = async () => {
-      if (!cdoaList) {
-        return;
-      }
-
+      if (!cdoaList) return;
       const data = await getCDOANames(cdoaList);
       setCDOAData(data);
     };
@@ -77,9 +68,36 @@ const CancelOrWithdrawalForm: React.FC<ICancelOrWithdrawalFormProps> = ({
     if (cdoaList && cdoaList.length > 0 && !hasFetched.current) {
       hasFetched.current = true; // Prevent re-fetching
       loadCDOANames();
-    } else {
     }
   }, [cdoaList, spHttpClient]);
+
+  const cdoaValue = useWatch({ name: "CDOA" }); // Watch for changes to CDOA
+
+  // Effect for setting DSM based on selected CDOA
+  React.useEffect(() => {
+    const findDSM = async (CDOAId: string) => {
+      const DSM = cdoaList.find((item) => item.CDOAId.toString() === CDOAId);
+      if (!DSM) {
+        console.log("Finding DSM Error");
+        return;
+      }
+
+      const DSMId = DSM.DSMId;
+      const userDataDSM = await getUserByID({
+        id: DSMId.toString(),
+        spHttpClient,
+        url: spListStrings.cdoaToDsmMap,
+      });
+
+      console.log("DSM user data: ", userDataDSM);
+      setDsmValue(userDataDSM.Title); // Set the DSM value
+      setValue("DSM", userDataDSM.Title); // Set the DSM in the form
+    };
+
+    if (cdoaValue) {
+      findDSM(cdoaValue.key);
+    }
+  }, [cdoaValue, cdoaList, setValue, spHttpClient]);
 
   const peoplePickerContext: IPeoplePickerContext = {
     absoluteUrl: absoluteUrl,
@@ -95,7 +113,9 @@ const CancelOrWithdrawalForm: React.FC<ICancelOrWithdrawalFormProps> = ({
     <div className={styles.cancelOrWithdrawalForm}>
       <h2>Cancel / Withdrawal Form</h2>
       <form onSubmit={handleSubmit(submitForm)}>
-        {errors && <p>{errors}</p>}
+        {errors && Object.keys(errors).length > 0 && (
+          <p>{JSON.stringify(errors)}</p>
+        )}
         <Dropdown
           errorMessage={errors.CorW?.message}
           {...register("CorW", { required: true })}
@@ -137,7 +157,7 @@ const CancelOrWithdrawalForm: React.FC<ICancelOrWithdrawalFormProps> = ({
             <TextField
               errorMessage={errors.Notes?.message}
               {...register("Notes", {
-                required: watch("CorW") === "Withdrawal" ? true : false,
+                required: watch("CorW") === "Withdrawal",
               })}
               label={"Student's Exact Written Request"}
               type={"text"}
@@ -148,7 +168,7 @@ const CancelOrWithdrawalForm: React.FC<ICancelOrWithdrawalFormProps> = ({
             <Dropdown
               errorMessage={errors.DocumentedInNotes?.message}
               {...register("DocumentedInNotes", {
-                required: watch("CorW") === "Withdrawal" ? true : false,
+                required: watch("CorW") === "Withdrawal",
               })}
               label={"Documented in Notes"}
               options={[
@@ -162,7 +182,7 @@ const CancelOrWithdrawalForm: React.FC<ICancelOrWithdrawalFormProps> = ({
             <TextField
               errorMessage={errors.InstructorName?.message}
               {...register("InstructorName", {
-                required: watch("CorW") === "Withdrawal" ? true : false,
+                required: watch("CorW") === "Withdrawal",
               })}
               label={"Instructor Name"}
               type={"text"}
@@ -173,7 +193,7 @@ const CancelOrWithdrawalForm: React.FC<ICancelOrWithdrawalFormProps> = ({
             <Dropdown
               errorMessage={errors.ESA?.message}
               {...register("ESA", {
-                required: watch("CorW") === "Withdrawal" ? true : false,
+                required: watch("CorW") === "Withdrawal",
               })}
               label={"ESA"}
               options={[
@@ -181,7 +201,7 @@ const CancelOrWithdrawalForm: React.FC<ICancelOrWithdrawalFormProps> = ({
                 { key: "no", text: "No" },
               ]}
               onChange={(e, option) => {
-                setValue("ESA", option?.text === "Yes" ? true : false);
+                setValue("ESA", option?.text === "Yes");
               }}
             />
           </>
@@ -205,25 +225,22 @@ const CancelOrWithdrawalForm: React.FC<ICancelOrWithdrawalFormProps> = ({
           errorMessage={errors.CDOA?.message}
           {...register("CDOA", { required: true })}
           label={"CDOA Name"}
-          options={cdoaData.reduce((acc, name) => {
-            if (!acc.some((option) => option.key === name.name)) {
-              acc.push({ key: name.CDOAId.toString(), text: name.name });
-            }
-            return acc;
-          }, [] as { key: string; text: string }[])}
+          options={cdoaData.map(({ name, CDOAId }) => ({
+            key: CDOAId.toString(),
+            text: name,
+          }))}
           onChange={(e, option) => {
             setValue("CDOA", option);
           }}
         />
-        {dsmValue && (
-          <TextField
-            {...register("DSM", { required: true })}
-            disabled
-            label={"DSM"}
-            type={"text"}
-            value={dsmValue}
-          />
-        )}
+        <TextField
+          errorMessage={errors.DSM?.message}
+          {...register("DSM", { required: true })}
+          disabled
+          label={"DSM"}
+          type={"text"}
+          value={watch("DSM")}
+        />
         <input
           type="submit"
           style={{

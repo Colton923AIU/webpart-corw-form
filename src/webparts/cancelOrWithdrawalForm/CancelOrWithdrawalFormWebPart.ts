@@ -6,7 +6,7 @@ import {
 import { BaseClientSideWebPart, WebPartContext } from "@microsoft/sp-webpart-base";
 
 import CancelOrWithdrawalForm from "./components/CancelOrWithdrawalForm";
-import { ICancelOrWithdrawalFormProps } from "./components/CancelOrWithdrawalForm";
+import { ICancelOrWithdrawalFormProps } from "./types/ICancelWithdrawalFormProps";
 
 export interface ICancelOrWithdrawalWebPartProps {
   description: string;
