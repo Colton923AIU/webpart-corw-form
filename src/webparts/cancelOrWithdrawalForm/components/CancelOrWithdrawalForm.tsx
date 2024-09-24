@@ -13,7 +13,7 @@ import { useForm, useWatch } from "react-hook-form";
 import { CWForm } from "../types/CWForm";
 import { ICancelOrWithdrawalFormProps } from "../types/ICancelWithdrawalFormProps";
 import resolver from "./resolver";
-import submitForm from "../functions/";
+import submitForm from "../functions/submitForm/submitForm";
 
 const CancelOrWithdrawalForm: React.FC<ICancelOrWithdrawalFormProps> = ({
   absoluteUrl,
