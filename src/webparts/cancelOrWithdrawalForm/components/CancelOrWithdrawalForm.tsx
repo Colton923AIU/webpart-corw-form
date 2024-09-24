@@ -87,28 +87,6 @@ const CancelOrWithdrawalForm: React.FC<ICancelOrWithdrawalFormProps> = ({
     spHttpClient: spHttpClient,
   };
 
-  const submitForm: SubmitHandler<CWForm> = (data) => {
-    const listUrl = spListStrings.corw;
-    spHttpClient
-      .post(listUrl, SPHttpClient.configurations.v1, {
-        body: JSON.stringify(data),
-      })
-      .then((response) => {
-        if (!response.ok) {
-          return response.json().then((err) => {
-            throw new Error(JSON.stringify(err));
-          });
-        }
-        return response.json();
-      })
-      .then((data) => {
-        console.log("Success:", data);
-      })
-      .catch((error) => {
-        console.log("Fail:", error);
-      });
-  };
-
   if (!cdoaData) {
     return null;
   }
@@ -120,7 +98,7 @@ const CancelOrWithdrawalForm: React.FC<ICancelOrWithdrawalFormProps> = ({
         {errors && <p>{errors}</p>}
         <Dropdown
           errorMessage={errors.CorW?.message}
-          {...(register("CorW"), { required: true })}
+          {...register("CorW", { required: true })}
           label={"Request Type"}
           options={[
             { key: "cancel", text: "Cancel" },
@@ -132,7 +110,7 @@ const CancelOrWithdrawalForm: React.FC<ICancelOrWithdrawalFormProps> = ({
         />
         <TextField
           errorMessage={errors.StudentName?.message}
-          {...(register("StudentName"), { required: true })}
+          {...register("StudentName", { required: true })}
           label={"Student Name"}
           onChange={(e) => {
             setValue("StudentName", e.currentTarget.value);
@@ -140,7 +118,7 @@ const CancelOrWithdrawalForm: React.FC<ICancelOrWithdrawalFormProps> = ({
         />
         <TextField
           errorMessage={errors.StudentId?.message}
-          {...(register("StudentId"), { required: true })}
+          {...register("StudentId", { required: true })}
           label={"Student ID"}
           type={"number"}
           onChange={(e) => {
@@ -148,18 +126,17 @@ const CancelOrWithdrawalForm: React.FC<ICancelOrWithdrawalFormProps> = ({
           }}
         />
         <DatePicker
-          {...(register("StartDate"), { required: true })}
+          {...register("StartDate", { required: true })}
           label={"Current Start Date"}
           onSelectDate={(date) => {
             setValue("StartDate", date);
           }}
         />
-        {watch("CorW") === "Withdrawal" ? (
+        {watch("CorW") === "Withdrawal" && (
           <>
             <TextField
               errorMessage={errors.Notes?.message}
-              {...(register("Notes"),
-              {
+              {...register("Notes", {
                 required: watch("CorW") === "Withdrawal" ? true : false,
               })}
               label={"Student's Exact Written Request"}
@@ -170,8 +147,7 @@ const CancelOrWithdrawalForm: React.FC<ICancelOrWithdrawalFormProps> = ({
             />
             <Dropdown
               errorMessage={errors.DocumentedInNotes?.message}
-              {...(register("DocumentedInNotes"),
-              {
+              {...register("DocumentedInNotes", {
                 required: watch("CorW") === "Withdrawal" ? true : false,
               })}
               label={"Documented in Notes"}
@@ -185,8 +161,7 @@ const CancelOrWithdrawalForm: React.FC<ICancelOrWithdrawalFormProps> = ({
             />
             <TextField
               errorMessage={errors.InstructorName?.message}
-              {...(register("InstructorName"),
-              {
+              {...register("InstructorName", {
                 required: watch("CorW") === "Withdrawal" ? true : false,
               })}
               label={"Instructor Name"}
@@ -197,8 +172,7 @@ const CancelOrWithdrawalForm: React.FC<ICancelOrWithdrawalFormProps> = ({
             />
             <Dropdown
               errorMessage={errors.ESA?.message}
-              {...(register("ESA"),
-              {
+              {...register("ESA", {
                 required: watch("CorW") === "Withdrawal" ? true : false,
               })}
               label={"ESA"}
@@ -211,10 +185,10 @@ const CancelOrWithdrawalForm: React.FC<ICancelOrWithdrawalFormProps> = ({
               }}
             />
           </>
-        ) : null}
+        )}
         <PeoplePicker
           errorMessage={errors.AAFAAdvisor?.message}
-          {...(register("AAFAAdvisor"), { required: true })}
+          {...register("AAFAAdvisor", { required: true })}
           context={peoplePickerContext}
           titleText="Financial Aid Advisor (AA or FA to be notified)"
           personSelectionLimit={1}
@@ -229,7 +203,7 @@ const CancelOrWithdrawalForm: React.FC<ICancelOrWithdrawalFormProps> = ({
         />
         <Dropdown
           errorMessage={errors.CDOA?.message}
-          {...(register("CDOA"), { required: true })}
+          {...register("CDOA", { required: true })}
           label={"CDOA Name"}
           options={cdoaData.reduce((acc, name) => {
             if (!acc.some((option) => option.key === name.name)) {
@@ -238,37 +212,27 @@ const CancelOrWithdrawalForm: React.FC<ICancelOrWithdrawalFormProps> = ({
             return acc;
           }, [] as { key: string; text: string }[])}
           onChange={(e, option) => {
-            return setters.setCDOA({
-              formData: formData,
-              option: option,
-              cdoaList: cdoaList as any,
-              dsmValueSetter: setDsmValue,
-              formSetter: setFormData,
-              spHttpClient: spHttpClient,
-              url: spListStrings.cdoaToDsmMap,
-            });
+            setValue("CDOA", option);
           }}
         />
-        {dsmValue ? (
+        {dsmValue && (
           <TextField
-            {...(register("DSM"), { required: true })}
+            {...register("DSM", { required: true })}
             disabled
             label={"DSM"}
             type={"text"}
             value={dsmValue}
           />
-        ) : null}
+        )}
         <input
-          type={"submit"}
+          type="submit"
           style={{
             padding: ".5rem",
             backgroundColor: "white",
             fontWeight: 700,
             margin: ".5rem 1rem",
           }}
-        >
-          Submit
-        </input>
+        />
       </form>
     </div>
   );
